@@ -1,0 +1,40 @@
+# Tier A -- zero-init Plucker added onto patch tokens.
+#
+# This is the injection VD3D's ablation found insufficient for camera control.  It
+# is here as the NEGATIVE CONTROL, not as a candidate: if tiers B and C do not beat
+# it, our "simple injection is not enough" claim has no evidence behind it and the
+# method section has to say so.
+model:
+  base_model_id: Qwen/Qwen3-VL-4B-Instruct
+  use_multi_image: true
+  use_per_frame_progress_token: true
+  pose:
+    enabled: true
+    injector: patch_add
+    n_freqs: 6              # Fourier bands; raw Plucker is low-frequency
+    pose_dropout: 0.1       # keeps the model usable without pose
+
+data:
+  clips_root: /home/yuang/ws_jepa/multicam_ws/outputs/clips
+  tasks: [StackCube, PegInsertionSide, PickCube]
+  kinds: [success, failure]
+  num_frames: 32
+  image_size: 256
+  # Poses held out of training entirely.  Scoring on cameras that appeared in
+  # training measures interpolation; only a held-out pose supports a transfer claim.
+  holdout_cameras: [sweep16, sweep17, sweep18, sweep19]
+  val_trajectories: 6
+
+loss:
+  progress_weight: 1.0
+  success_weight: 0.5
+  pose_consistency_weight: 0.0   # see trainers/avm_trainer.py before raising this
+
+training:
+  run_name: avm_tier_a
+  freeze_backbone: true          # makes any change attributable to the pose pathway
+  freeze_vision_tower: true
+  lr: 1.0e-4
+  pose_lr: 5.0e-4                # adapter starts at zero and must travel further
+  epochs: 1
+  bf16: true

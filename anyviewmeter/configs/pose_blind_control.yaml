@@ -1,0 +1,17 @@
+# Pose-blind control: identical code path with the injector removed.
+# Every pose result is measured against this, not against published Robometer
+# numbers -- same data, same targets, same heads, only the pose pathway differs.
+model:
+  base_model_id: Qwen/Qwen3-VL-4B-Instruct
+  pose:
+    enabled: false
+data:
+  clips_root: /home/yuang/ws_jepa/multicam_ws/outputs/clips
+  tasks: [StackCube, PegInsertionSide, PickCube]
+  holdout_cameras: [sweep16, sweep17, sweep18, sweep19]
+loss:
+  progress_weight: 1.0
+  success_weight: 0.5
+training:
+  run_name: avm_pose_blind
+  freeze_backbone: true

@@ -1,0 +1,44 @@
+# Tier B -- tier A plus a global <cam> register token per frame.
+#
+# Rationale (UniScale splits pose the same way): rays are a LOCAL signal and belong
+# on patch tokens, but "which viewpoint am I looking from" is a GLOBAL fact the LLM
+# wants in one place.  Forcing both through the patch channel makes pose compete
+# with image content; the register token gives it its own slot.
+model:
+  base_model_id: Qwen/Qwen3-VL-4B-Instruct
+  use_multi_image: true
+  use_per_frame_progress_token: true
+  pose:
+    enabled: true
+    injector: cam_token
+    n_freqs: 6
+    pose_n_freqs: 4
+    cam_token: "<|cam_token|>"
+    pose_dropout: 0.1
+    # The framing entries of the pose descriptor need a world anchor.  Phase A found
+    # viewpoint quality is mostly a statement about the camera RELATIVE to the
+    # workspace, so leaving this null discards real signal.
+    workspace_centre: null       # per-task centres are filled in from the clip meta
+
+data:
+  clips_root: /home/yuang/ws_jepa/multicam_ws/outputs/clips
+  tasks: [StackCube, PegInsertionSide, PickCube]
+  kinds: [success, failure]
+  num_frames: 32
+  image_size: 256
+  holdout_cameras: [sweep16, sweep17, sweep18, sweep19]
+  val_trajectories: 6
+
+loss:
+  progress_weight: 1.0
+  success_weight: 0.5
+  pose_consistency_weight: 0.0
+
+training:
+  run_name: avm_tier_b
+  freeze_backbone: true
+  freeze_vision_tower: true
+  lr: 1.0e-4
+  pose_lr: 5.0e-4
+  epochs: 1
+  bf16: true

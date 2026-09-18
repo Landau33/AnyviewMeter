@@ -1,0 +1,15 @@
+[project]
+name = "anyviewmeter"
+version = "0.1.0"
+description = "Pose-conditioned progress reward model: Plucker injection into a pretrained VLM"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.1",
+    "numpy>=1.24",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "transformers>=4.57",
+]
+
+[tool.setuptools.packages.find]
+include = ["anyviewmeter*"]

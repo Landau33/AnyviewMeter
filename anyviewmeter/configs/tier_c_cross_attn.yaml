@@ -1,0 +1,50 @@
+# Tier C -- tier B plus a ControlNet-style zero-gated cross-attention branch.
+#
+# This is the injection VD3D found actually works for camera control.  Gates start
+# closed, so the model at step 0 is bit-identical to the pretrained backbone and has
+# to actively open them -- which makes any gain attributable and keeps training
+# stable at the start.
+#
+# WATCH THE GATES.  training logs gate/layer_* magnitudes.  A gate that stays near
+# zero means the backbone declined the pose signal.  That is a finding to report,
+# not a bug to hide, and it would be the strongest possible evidence that "how
+# Plucker enters the VLM" is the non-trivial part of the method.
+model:
+  base_model_id: Qwen/Qwen3-VL-4B-Instruct
+  use_multi_image: true
+  use_per_frame_progress_token: true
+  pose:
+    enabled: true
+    injector: cross_attn
+    n_freqs: 6
+    pose_n_freqs: 4
+    pose_dropout: 0.1
+    control_dim: 512
+    n_control_layers: 2
+    n_heads: 8
+    layer_fraction: 0.25         # a handful of blocks through the depth, not every layer
+    layers: null                 # explicit indices override layer_fraction
+    log_gate_values: true
+
+data:
+  clips_root: /home/yuang/ws_jepa/multicam_ws/outputs/clips
+  tasks: [StackCube, PegInsertionSide, PickCube]
+  kinds: [success, failure]
+  num_frames: 32
+  image_size: 256
+  holdout_cameras: [sweep16, sweep17, sweep18, sweep19]
+  val_trajectories: 6
+
+loss:
+  progress_weight: 1.0
+  success_weight: 0.5
+  pose_consistency_weight: 0.0
+
+training:
+  run_name: avm_tier_c
+  freeze_backbone: true
+  freeze_vision_tower: true
+  lr: 1.0e-4
+  pose_lr: 5.0e-4
+  epochs: 1
+  bf16: true
